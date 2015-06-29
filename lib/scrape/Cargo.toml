@@ -1,0 +1,25 @@
+[package]
+name = "embed"
+version = "0.1.0"
+authors = ["Mike Piccolo <mfpiccolo@gmail.com>"]
+
+[lib]
+name = "embed"
+crate-type = ["dylib"]
+
+[dependencies]
+html5ever = "*"
+
+[dependencies.hyper]
+git = "https://github.com/hyperium/hyper.git"
+
+[dependencies.url]
+git = "https://github.com/servo/rust-url"
+
+[dependencies.string_cache]
+git = "https://github.com/servo/string-cache"
+
+[dependencies.tendril]
+git = "https://github.com/kmcallister/tendril"
+
+[dependencies.html5ever_dom_sink]
