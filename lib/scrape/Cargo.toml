@@ -20,6 +20,5 @@ git = "https://github.com/servo/rust-url"
 git = "https://github.com/servo/string-cache"
 
 [dependencies.tendril]
-git = "https://github.com/kmcallister/tendril"
 
 [dependencies.html5ever_dom_sink]

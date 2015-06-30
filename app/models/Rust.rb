@@ -9,5 +9,5 @@ module Rust
            :b, :int
   end
 
-  attach_function :get_page, [:string], :string
+  attach_function :parse_page, [:string], :string
 end
