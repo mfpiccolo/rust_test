@@ -17,7 +17,6 @@ git = "https://github.com/hyperium/hyper.git"
 git = "https://github.com/servo/rust-url"
 
 [dependencies.string_cache]
-git = "https://github.com/servo/string-cache"
 
 [dependencies.tendril]
 

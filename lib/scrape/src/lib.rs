@@ -3,6 +3,7 @@
 #![feature(cstr_memory)]
 #![feature(rustc_private)]
 #![feature(str_escape)]
+#![feature(append)]
 extern crate libc;
 
 extern crate url;
@@ -43,7 +44,7 @@ fn get_page(url: &str) -> String {
 use tendril::{StrTendril, SliceExt};
 
 #[no_mangle]
-pub extern fn parse_page(url: *const libc::c_char) {
+pub extern fn print_links(url: *const libc::c_char) {
   let url_cstr = unsafe { CStr::from_ptr(url) };  // &std::ffi::c_str::CStr
   let url_and_str = url_cstr.to_str().unwrap();  // &str
 
@@ -54,41 +55,54 @@ pub extern fn parse_page(url: *const libc::c_char) {
 
   let dom: RcDom = parse(one_input(body_tendril), Default::default());
 
-  walk(0, dom.document);
+  let links = query(dom.document, "a");
+
+  for link in links {
+    match link.borrow().node {
+      Element(ref name, ref attrs) => {
+        for attr in attrs.iter() {
+            if attr.name.local.to_string() == "href".to_string() {
+              print!("{}\n", attr.value);
+            }
+        };
+      },
+      _ => {}
+    }
+  }
+
   // let c_body = CString::new(body).unwrap();  // std::ffi::c_str::CString
 
   // c_body.into_ptr()
 }
 
-fn walk(indent: usize, handle: Handle) {
+fn query(handle: Handle, tag_name: &str) -> Vec<Handle> {
+    let mut nodes: Vec<Handle> = Vec::new();
     let node = handle.borrow();
     // FIXME: don't allocate
-    print!("{}", repeat(" ").take(indent).collect::<String>());
+    // print!("{}", repeat(" ").take(indent).collect::<String>());
     match node.node {
-        Document
-            => println!("#Document"),
+        Document => {},
+            // => println!("#Document"),
 
-        Doctype(ref name, ref public, ref system)
-            => println!("<!DOCTYPE {} \"{}\" \"{}\">", *name, *public, *system),
+        Doctype(ref name, ref public, ref system) => {},
+            // => println!("<!DOCTYPE {} \"{}\" \"{}\">", *name, *public, *system),
 
-        Text(ref text)
-            => println!("#text: {}", text.escape_default()),
+        Text(ref text) => {},
+            // => println!("#text: {}", text.escape_default()),
 
-        Comment(ref text)
-            => println!("<!-- {} -->", text.escape_default()),
+        Comment(ref text) => {},
+            // => println!("<!-- {} -->", text.escape_default()),
 
         Element(ref name, ref attrs) => {
-            // assert!(name.ns == ns!(html));
-            print!("<{}", name.local);
-            for attr in attrs.iter() {
-                // assert!(attr.name.ns == ns!(""));
-                print!(" {}=\"{}\"", attr.name.local, attr.value);
+            if name.local.to_string() == tag_name {
+              nodes.push(handle.clone());
             }
-            println!(">");
         }
     }
 
     for child in node.children.iter() {
-        walk(indent+4, child.clone());
+        nodes.append(&mut query(child.clone(), tag_name));
     }
+    nodes
 }
+
