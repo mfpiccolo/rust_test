@@ -9,6 +9,8 @@ crate-type = ["dylib"]
 
 [dependencies]
 html5ever = "*"
+fnv = "1.0"
+regex = "0.1.8"
 
 [dependencies.hyper]
 git = "https://github.com/hyperium/hyper.git"
@@ -21,3 +23,6 @@ git = "https://github.com/servo/rust-url"
 [dependencies.tendril]
 
 [dependencies.html5ever_dom_sink]
+
+[dependencies.selectors]
+git = "https://github.com/servo/rust-selectors"

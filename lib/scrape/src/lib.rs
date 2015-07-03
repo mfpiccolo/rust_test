@@ -11,6 +11,7 @@ extern crate hyper;
 extern crate html5ever;
 extern crate serialize;
 extern crate html5ever_dom_sink;
+extern crate fnv;
 
 #[macro_use]
 extern crate string_cache;
@@ -26,14 +27,42 @@ use std::iter::repeat;
 use hyper::Client;
 use hyper::header::Connection;
 use std::io::Read;
+use std::mem;
+
+use libc::size_t;
+#[repr(C)]
+pub struct Array {
+    len: libc::size_t,
+    data: *const libc::c_void,
+}
+
+impl Array {
+    fn from_vec<T>(mut vec: Vec<T>) -> Array {
+        // Important to make length and capacity match
+        // A better solution is to track both length and capacity
+        // vec.shrink_to_fit();
+
+        let array = Array { data: vec.as_ptr() as *const libc::c_void, len: vec.len() as libc::size_t };
+
+        // Whee! Leak the memory, and now the raw pointer (and
+        // eventually C) is the owner.
+        // mem::forget(vec);
+
+        array
+    }
+}
 
 fn get_page(url: &str) -> String {
-    let mut client = Client::new();
-    let mut res = client.get(url)
+    let client = Client::new();
+
+
+    let mut temp_res = client.get(url)
        // set a header
        .header(Connection::close())
        // let 'er go!
-       .send().unwrap();
+       .send();
+
+    let mut res = temp_res.unwrap();
 
     let mut body = String::new();
     res.read_to_string(&mut body).unwrap();
@@ -44,7 +73,7 @@ fn get_page(url: &str) -> String {
 use tendril::{StrTendril, SliceExt};
 
 #[no_mangle]
-pub extern fn print_links(url: *const libc::c_char) {
+pub extern fn get_links(url: *const libc::c_char) -> Array {
   let url_cstr = unsafe { CStr::from_ptr(url) };  // &std::ffi::c_str::CStr
   let url_and_str = url_cstr.to_str().unwrap();  // &str
 
@@ -57,12 +86,15 @@ pub extern fn print_links(url: *const libc::c_char) {
 
   let links = query(dom.document, "a");
 
+  let mut urls: Vec<*const libc::c_char> = vec![];
+
   for link in links {
     match link.borrow().node {
       Element(ref name, ref attrs) => {
         for attr in attrs.iter() {
             if attr.name.local.to_string() == "href".to_string() {
-              print!("{}\n", attr.value);
+              urls.push(CString::new(attr.value.to_string()).unwrap().into_ptr());
+              // print!("{}\n", attr.value);
             }
         };
       },
@@ -70,9 +102,7 @@ pub extern fn print_links(url: *const libc::c_char) {
     }
   }
 
-  // let c_body = CString::new(body).unwrap();  // std::ffi::c_str::CString
-
-  // c_body.into_ptr()
+  Array::from_vec(urls)
 }
 
 fn query(handle: Handle, tag_name: &str) -> Vec<Handle> {
@@ -105,4 +135,3 @@ fn query(handle: Handle, tag_name: &str) -> Vec<Handle> {
     }
     nodes
 }
-
