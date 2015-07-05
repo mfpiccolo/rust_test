@@ -13,5 +13,5 @@ module Rust
     end
   end
 
-  attach_function :get_links, [:string], NodesArray.by_value
+  attach_function :get_links, [:string, :string], NodesArray.by_value
 end
